@@ -1,0 +1,14 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  ci:
+    uses: MLG-Fortress/.github/.github/workflows/maven-ci.yml@master
+    with:
+      java-version: '25'
