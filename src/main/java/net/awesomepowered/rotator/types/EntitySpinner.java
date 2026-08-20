@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.AtomicDouble;
 import net.awesomepowered.rotator.RotatoR;
 import net.awesomepowered.rotator.Spinnable;
 import net.awesomepowered.rotator.event.RotatorSpinEvent;
-import net.awesomepowered.rotator.utils.EnumValidator;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -192,23 +191,10 @@ public class EntitySpinner implements Spinnable {
             entity.getLocation().getWorld().playSound(location, Sound.valueOf(sound), 1, 1);
         }
         if (effect != null) {
-            try {
-                entity.getLocation().getWorld().playEffect(location, Effect.valueOf(effect), 1);
-            } catch (IllegalArgumentException e) {
-                setEffect(null);
-            }
+            entity.getLocation().getWorld().playEffect(location, Effect.valueOf(effect), 1);
         }
         if (particle != null) {
-            try {
-                Particle particleType = Particle.valueOf(particle);
-                if (EnumValidator.isParticlePlayableWithoutData(particle)) {
-                    entity.getLocation().getWorld().spawnParticle(particleType, location, 1);
-                } else {
-                    setParticle(null);
-                }
-            } catch (IllegalArgumentException e) {
-                setParticle(null);
-            }
+            entity.getLocation().getWorld().spawnParticle(Particle.valueOf(particle), location, 1);
         }
     }
 }

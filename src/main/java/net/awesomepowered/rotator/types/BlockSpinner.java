@@ -4,7 +4,6 @@ import net.awesomepowered.rotator.RotatoR;
 import net.awesomepowered.rotator.Spinnable;
 import net.awesomepowered.rotator.event.RotatorSpinEvent;
 import net.awesomepowered.rotator.utils.Rotation;
-import net.awesomepowered.rotator.utils.EnumValidator;
 import net.awesomepowered.rotator.utils.Spinner;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
@@ -161,23 +160,10 @@ public class BlockSpinner implements Spinnable {
             state.getLocation().getWorld().playSound(state.getLocation(), Sound.valueOf(sound), 1, 1);
         }
         if (effect != null) {
-            try {
-                state.getLocation().getWorld().playEffect(state.getLocation().add(0.5,0,0.5), Effect.valueOf(effect), 1);
-            } catch (IllegalArgumentException e) {
-                setEffect(null);
-            }
+            state.getLocation().getWorld().playEffect(state.getLocation().add(0.5,0,0.5), Effect.valueOf(effect), 1);
         }
         if (particle != null) {
-            try {
-                Particle particleType = Particle.valueOf(particle);
-                if (EnumValidator.isParticlePlayableWithoutData(particle)) {
-                    state.getLocation().getWorld().spawnParticle(particleType, state.getLocation().add(0.5,0,0.5), 1);
-                } else {
-                    setParticle(null);
-                }
-            } catch (IllegalArgumentException e) {
-                setParticle(null);
-            }
+            state.getLocation().getWorld().spawnParticle(Particle.valueOf(particle), state.getLocation().add(0.5,0,0.5), 1);
         }
     }
 
