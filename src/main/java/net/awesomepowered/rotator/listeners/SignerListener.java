@@ -75,7 +75,7 @@ public class SignerListener implements Listener {
             return;
         }
         if (tryParticle(message) && plugin.leSigners.get(p.getUniqueId()) != null) {
-            plugin.leSigners.get(p.getUniqueId()).setEffect(message.toUpperCase());
+            plugin.leSigners.get(p.getUniqueId()).setParticle(message.toUpperCase());
             plugin.debug("Chat","was called and the message is PARTICLE", message, "particle set");
             sendMessage(p, "&aYou have set the particle to &b" + message.toUpperCase());
             return;
