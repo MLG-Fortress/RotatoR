@@ -78,16 +78,16 @@ public class BlockSpinner implements Spinnable {
     }
 
     public void setEffect(String effect) {
-        this.effect = EnumValidator.validate(effect, Effect.class, null, null);
+        this.effect = effect;
     }
 
     public void setSound(String sound) {
-        this.sound = EnumValidator.validate(sound, Sound.class, null, null);
+        this.sound = sound;
     }
 
     @Override
     public void setParticle(String particle) {
-        this.particle = EnumValidator.validate(particle, Particle.class, null, null);
+        this.particle = particle;
     }
 
     public String getEffect() {

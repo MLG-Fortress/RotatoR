@@ -50,6 +50,7 @@ public final class RotatoR extends JavaPlugin {
     public void onEnable() {
         main =  this;
         saveDefaultConfig();
+        convertConfig();
         rpm = getConfig().getInt("rpm");
         debug = getConfig().getBoolean("debug");
         getCommand("lesign").setExecutor(new SignCommand(this));
@@ -97,6 +98,29 @@ public final class RotatoR extends JavaPlugin {
         return main;
     }
 
+    /**
+     * One-time conversion of legacy enum names in the config. Runs once at plugin
+     * enable — never again. Converts and writes back all spinner/espinner values,
+     * so later spooling reads already-valid names.
+     */
+    public void convertConfig() {
+        if (getConfig().getConfigurationSection("spinner") != null) {
+            for (String s : getConfig().getConfigurationSection("spinner").getKeys(false)) {
+                getConfig().set("spinner."+s+".sound", EnumValidator.validate(getConfig().getString("spinner."+s+".sound"), Sound.class, "spinner."+s+".sound", getLogger()));
+                getConfig().set("spinner."+s+".effect", EnumValidator.validate(getConfig().getString("spinner."+s+".effect"), Effect.class, "spinner."+s+".effect", getLogger()));
+                getConfig().set("spinner."+s+".particle", EnumValidator.validate(getConfig().getString("spinner."+s+".particle"), Particle.class, "spinner."+s+".particle", getLogger()));
+            }
+        }
+        if (getConfig().getConfigurationSection("espinner") != null) {
+            for (String s : getConfig().getConfigurationSection("espinner").getKeys(false)) {
+                getConfig().set("espinner."+s+".sound", EnumValidator.validate(getConfig().getString("espinner."+s+".sound"), Sound.class, "espinner."+s+".sound", getLogger()));
+                getConfig().set("espinner."+s+".effect", EnumValidator.validate(getConfig().getString("espinner."+s+".effect"), Effect.class, "espinner."+s+".effect", getLogger()));
+                getConfig().set("espinner."+s+".particle", EnumValidator.validate(getConfig().getString("espinner."+s+".particle"), Particle.class, "espinner."+s+".particle", getLogger()));
+            }
+        }
+        saveConfig();
+    }
+
     public void spoolSpinners() {
 
         if (getConfig().getConfigurationSection("spinner") == null) {
@@ -109,12 +133,9 @@ public final class RotatoR extends JavaPlugin {
                     debug("It's spinnable");
                     BlockState blockState = loc.getBlock().getState();
                     int mode = getConfig().getInt("spinner."+s+".mode");
-                    String sound = EnumValidator.validate(getConfig().getString("spinner."+s+".sound"), Sound.class, "spinner."+s+".sound", getLogger());
-                    String effect = EnumValidator.validate(getConfig().getString("spinner."+s+".effect"), Effect.class, "spinner."+s+".effect", getLogger());
-                    String particle = EnumValidator.validate(getConfig().getString("spinner."+s+".particle"), Particle.class, "spinner."+s+".particle", getLogger());
-                    getConfig().set("spinner."+s+".sound", sound);
-                    getConfig().set("spinner."+s+".effect", effect);
-                    getConfig().set("spinner."+s+".particle", particle);
+                    String sound = getConfig().getString("spinner."+s+".sound");
+                    String effect = getConfig().getString("spinner."+s+".effect");
+                    String particle = getConfig().getString("spinner."+s+".particle");
                     int rpm = getConfig().getInt("spinner."+s+".rpm", this.rpm);
                     BlockSpinner blockSpinner = new BlockSpinner(blockState, mode, rpm);
                     blockSpinner.setEffect(effect);
@@ -142,12 +163,9 @@ public final class RotatoR extends JavaPlugin {
                 Entity entity = Bukkit.getEntity(UUID.fromString(s));
                 if (entity != null && !entitySpinners.containsKey(UUID.fromString(s)) && Spinner.isSpinnable(entity)) {
                     debug("It's espinnable");
-                    String sound = EnumValidator.validate(getConfig().getString("espinner."+s+".sound"), Sound.class, "espinner."+s+".sound", getLogger());
-                    String effect = EnumValidator.validate(getConfig().getString("espinner."+s+".effect"), Effect.class, "espinner."+s+".effect", getLogger());
-                    String particle = EnumValidator.validate(getConfig().getString("espinner."+s+".particle"), Particle.class, "espinner."+s+".particle", getLogger());
-                    getConfig().set("espinner."+s+".sound", sound);
-                    getConfig().set("espinner."+s+".effect", effect);
-                    getConfig().set("espinner."+s+".particle", particle);
+                    String sound = getConfig().getString("espinner."+s+".sound");
+                    String effect = getConfig().getString("espinner."+s+".effect");
+                    String particle = getConfig().getString("espinner."+s+".particle");
                     int rpm = getConfig().getInt("espinner."+s+".rpm", this.rpm);
                     double yaw = getConfig().getDouble("espinner."+s+".yaw", 12.5);
                     EntitySpinner entitySpinner = new EntitySpinner(entity, 0, rpm);
