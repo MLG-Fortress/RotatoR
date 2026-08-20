@@ -109,6 +109,18 @@ public class EnumValidator {
         EFFECT_ALIASES.put("IRON_TRAPDOOR_CLOSE", null);
         EFFECT_ALIASES.put("FENCE_GATE_CLOSE", null);
 
+        // 1.21.x+ renames: old constants removed on some builds (verified against
+        // Purpur 26.2 runtime). Only used when the exact name is invalid, so servers
+        // that still ship the old names keep them (exact match wins first).
+        EFFECT_ALIASES.put("SMOKE", "SMOKE_SHOOT");
+        EFFECT_ALIASES.put("STEP_SOUND", "DESTROY_BLOCK");
+        EFFECT_ALIASES.put("VILLAGER_PLANT_GROW", "BEE_GROWTH");
+        EFFECT_ALIASES.put("SHOOT_WHITE_SMOKE", "WHITE_SMOKE_SHOOT");
+        EFFECT_ALIASES.put("PARTICLES_EGG_CRACK", "EGG_CRACK");
+        EFFECT_ALIASES.put("PARTICLES_SCULK_CHARGE", "SCULK_CHARGE");
+        EFFECT_ALIASES.put("PARTICLES_SCULK_SHRIEK", "SCULK_SHRIEK");
+        EFFECT_ALIASES.put("PARTICLES_AND_SOUND_BRUSH_BLOCK_COMPLETE", "BRUSH_BLOCK_COMPLETE");
+
         // ==========================================
         // PARTICLE ALIASES (1.13 & 1.20.5 Flattening)
         // ==========================================
@@ -226,17 +238,23 @@ public class EnumValidator {
         return null;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private static boolean isValidEnum(String value, Class<?> clazz) {
         try {
-            if (clazz.isEnum()) {
-                Enum.valueOf((Class<Enum>) clazz, value);
-            } else {
-                // 1.21.3+ Spigot turned org.bukkit.Sound into an interface backed by
-                // registries. A static valueOf(String) is kept for backwards compatibility.
-                clazz.getMethod("valueOf", String.class).invoke(null, value);
-            }
+            // 1. Check if the constant exists as a public field.
+            // Works for pure Enums (constants are public static fields) AND modern
+            // Bukkit registry interfaces like Sound (1.21.3+) which expose the same
+            // constants as public static fields but may not declare valueOf().
+            clazz.getField(value);
             return true;
+        } catch (NoSuchFieldException e) {
+            // 2. Fallback to valueOf() in case a registry hides its fields and
+            // resolves names dynamically.
+            try {
+                clazz.getMethod("valueOf", String.class).invoke(null, value);
+                return true;
+            } catch (Exception ex) {
+                return false;
+            }
         } catch (Exception e) {
             return false;
         }
