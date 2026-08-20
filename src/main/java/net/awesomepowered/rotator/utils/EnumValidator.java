@@ -260,8 +260,7 @@ public class EnumValidator {
     // ==========================================================================
     // PARTICLE PLAYABILITY SECTION
     // --------------------------------------------------------------------------
-    // Why this exists — NOT exercised by the current test configs (no particles
-    // are configured), but necessary:
+    // Not tested but may be necessary
     //
     // RotatoR always plays particles with the count-only overload:
     //     world.spawnParticle(Particle.valueOf(particle), location, 1)
