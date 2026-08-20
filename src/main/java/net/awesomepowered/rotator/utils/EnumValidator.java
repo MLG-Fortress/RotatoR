@@ -121,9 +121,16 @@ public class EnumValidator {
         EFFECT_ALIASES.put("PARTICLES_SCULK_SHRIEK", "SCULK_SHRIEK");
         EFFECT_ALIASES.put("PARTICLES_AND_SOUND_BRUSH_BLOCK_COMPLETE", "BRUSH_BLOCK_COMPLETE");
 
-        // ==========================================
+        // ============================================================
         // PARTICLE ALIASES (1.13 & 1.20.5 Flattening)
-        // ==========================================
+        // ------------------------------------------------------------
+        // Legacy particle names from the 1.13 "flattening" (EXPLOSION_NORMAL →
+        // POOF) and 1.20.5 (SPELL → EFFECT, ITEM_CRACK → ITEM) no longer exist
+        // on modern servers. Same necessity as the Sound/Effect aliases above:
+        // configs written on older servers reference names that would otherwise
+        // be cleared at load. Only used when the exact name is invalid, so
+        // servers that still ship the old names keep them.
+        // ============================================================
         PARTICLE_ALIASES.put("EXPLOSION_NORMAL", "POOF");
         PARTICLE_ALIASES.put("EXPLOSION_LARGE", "EXPLOSION");
         PARTICLE_ALIASES.put("EXPLOSION_HUGE", "EXPLOSION_EMITTER");
@@ -180,8 +187,7 @@ public class EnumValidator {
 
         // 1. Exact match against current server's class/enum
         if (isValidEnum(upper, clazz)) {
-            if (clazz == Particle.class && !isParticlePlayableWithoutData(upper)) {
-                warnParticleRequiresData(value, configKey, logger);
+            if (!isPlayableParticle(upper, clazz, value, configKey, logger)) {
                 return null;
             }
             return upper;
@@ -200,8 +206,7 @@ public class EnumValidator {
                 return null;
             }
             if (isValidEnum(mapped, clazz)) {
-                if (clazz == Particle.class && !isParticlePlayableWithoutData(mapped)) {
-                    warnParticleRequiresData(value, configKey, logger);
+                if (!isPlayableParticle(mapped, clazz, value, configKey, logger)) {
                     return null;
                 }
                 if (logger != null && configKey != null) {
@@ -220,8 +225,7 @@ public class EnumValidator {
             if (upper.startsWith(prefix)) {
                 String stripped = upper.substring(prefix.length());
                 if (isValidEnum(stripped, clazz)) {
-                    if (clazz == Particle.class && !isParticlePlayableWithoutData(stripped)) {
-                        warnParticleRequiresData(value, configKey, logger);
+                    if (!isPlayableParticle(stripped, clazz, value, configKey, logger)) {
                         return null;
                     }
                     if (logger != null && configKey != null) {
@@ -235,8 +239,7 @@ public class EnumValidator {
             // Try prepending prefix (e.g. COW_AMBIENT → ENTITY_COW_AMBIENT on modern servers)
             String prepended = prefix + upper;
             if (isValidEnum(prepended, clazz)) {
-                if (clazz == Particle.class && !isParticlePlayableWithoutData(prepended)) {
-                    warnParticleRequiresData(value, configKey, logger);
+                if (!isPlayableParticle(prepended, clazz, value, configKey, logger)) {
                     return null;
                 }
                 if (logger != null && configKey != null) {
@@ -254,7 +257,40 @@ public class EnumValidator {
         return null;
     }
 
-    public static boolean isParticlePlayableWithoutData(String value) {
+    // ==========================================================================
+    // PARTICLE PLAYABILITY SECTION
+    // --------------------------------------------------------------------------
+    // Why this exists — NOT exercised by the current test configs (no particles
+    // are configured), but necessary:
+    //
+    // RotatoR always plays particles with the count-only overload:
+    //     world.spawnParticle(Particle.valueOf(particle), location, 1)
+    // Bukkit's API requires a data argument for any particle whose
+    // Particle.getDataType() is not Void.class (e.g. ITEM, BLOCK, DUST,
+    // ENTITY_EFFECT, SCULK_CHARGE — see org.bukkit.Particle.getDataType():
+    // "Returns the required data type for the particle"). Spawning such a
+    // particle without its data throws IllegalArgumentException.
+    //
+    // play() has no try/catch by design (validation lives at the config
+    // boundary), so this load-time check is the ONLY thing preventing a
+    // data-requiring particle from crashing the spinner task on every tick.
+    //
+    // To remove: delete this section and the four isPlayableParticle(...)
+    // calls in validate(). Keep PARTICLE_ALIASES (legacy renames).
+    // ==========================================================================
+
+    private static boolean isPlayableParticle(String particleName, Class<?> clazz, String value, String configKey, Logger logger) {
+        if (clazz != Particle.class) {
+            return true;
+        }
+        if (isParticlePlayableWithoutData(particleName)) {
+            return true;
+        }
+        warnParticleRequiresData(value, configKey, logger);
+        return false;
+    }
+
+    private static boolean isParticlePlayableWithoutData(String value) {
         try {
             Object particle = Particle.class.getMethod("valueOf", String.class).invoke(null, value);
             Class<?> dataType = (Class<?>) Particle.class.getMethod("getDataType").invoke(particle);
