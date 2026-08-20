@@ -180,6 +180,10 @@ public class EnumValidator {
 
         // 1. Exact match against current server's class/enum
         if (isValidEnum(upper, clazz)) {
+            if (clazz == Particle.class && !isParticlePlayableWithoutData(upper)) {
+                warnParticleRequiresData(value, configKey, logger);
+                return null;
+            }
             return upper;
         }
 
@@ -196,6 +200,10 @@ public class EnumValidator {
                 return null;
             }
             if (isValidEnum(mapped, clazz)) {
+                if (clazz == Particle.class && !isParticlePlayableWithoutData(mapped)) {
+                    warnParticleRequiresData(value, configKey, logger);
+                    return null;
+                }
                 if (logger != null && configKey != null) {
                     logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' → '" + mapped + "'"
                             + " for " + configKey);
@@ -212,6 +220,10 @@ public class EnumValidator {
             if (upper.startsWith(prefix)) {
                 String stripped = upper.substring(prefix.length());
                 if (isValidEnum(stripped, clazz)) {
+                    if (clazz == Particle.class && !isParticlePlayableWithoutData(stripped)) {
+                        warnParticleRequiresData(value, configKey, logger);
+                        return null;
+                    }
                     if (logger != null && configKey != null) {
                         logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' → '" + stripped + "'"
                                 + " for " + configKey);
@@ -223,6 +235,10 @@ public class EnumValidator {
             // Try prepending prefix (e.g. COW_AMBIENT → ENTITY_COW_AMBIENT on modern servers)
             String prepended = prefix + upper;
             if (isValidEnum(prepended, clazz)) {
+                if (clazz == Particle.class && !isParticlePlayableWithoutData(prepended)) {
+                    warnParticleRequiresData(value, configKey, logger);
+                    return null;
+                }
                 if (logger != null && configKey != null) {
                     logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' → '" + prepended + "'"
                             + " for " + configKey);
@@ -238,24 +254,42 @@ public class EnumValidator {
         return null;
     }
 
+    public static boolean isParticlePlayableWithoutData(String value) {
+        try {
+            Object particle = Particle.class.getMethod("valueOf", String.class).invoke(null, value);
+            Class<?> dataType = (Class<?>) Particle.class.getMethod("getDataType").invoke(particle);
+            return dataType == Void.class;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static void warnParticleRequiresData(String value, String configKey, Logger logger) {
+        if (logger != null && configKey != null) {
+            logger.warning("Particle '" + value + "' requires extra particle data and cannot be played by RotatoR"
+                    + " — clearing " + configKey);
+        }
+    }
+
     private static boolean isValidEnum(String value, Class<?> clazz) {
         try {
-            // 1. Check if the constant exists as a public field.
-            // Works for pure Enums (constants are public static fields) AND modern
-            // Bukkit registry interfaces like Sound (1.21.3+) which expose the same
-            // constants as public static fields but may not declare valueOf().
-            clazz.getField(value);
+            // valueOf(String) is the source of truth: it's exactly what play() calls
+            // at runtime. Present on enums (Particle, Effect on Spigot), classes with
+            // custom valueOf (Effect on Purpur 26.2, which keeps legacy static fields
+            // but rejects them in valueOf), and Sound since 1.21.3 (deprecated but kept).
+            clazz.getMethod("valueOf", String.class).invoke(null, value);
             return true;
-        } catch (NoSuchFieldException e) {
-            // 2. Fallback to valueOf() in case a registry hides its fields and
-            // resolves names dynamically.
+        } catch (NoSuchMethodException e) {
+            // No valueOf at all — fall back to field lookup in case a registry
+            // exposes constants only as public static fields.
             try {
-                clazz.getMethod("valueOf", String.class).invoke(null, value);
+                clazz.getField(value);
                 return true;
-            } catch (Exception ex) {
+            } catch (NoSuchFieldException ex) {
                 return false;
             }
         } catch (Exception e) {
+            // valueOf exists but rejected the name (IllegalArgumentException etc.).
             return false;
         }
     }

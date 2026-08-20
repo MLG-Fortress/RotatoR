@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import net.awesomepowered.rotator.RotatoR;
 import net.awesomepowered.rotator.Spinnable;
 import net.awesomepowered.rotator.event.RotatorSpinEvent;
+import net.awesomepowered.rotator.utils.EnumValidator;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -97,15 +98,15 @@ public class EntitySpinner implements Spinnable {
     }
 
     public void setEffect(String effect) {
-        this.effect = effect;
+        this.effect = EnumValidator.validate(effect, Effect.class, null, null);
     }
 
     public void setSound(String sound) {
-        this.sound = sound;
+        this.sound = EnumValidator.validate(sound, Sound.class, null, null);
     }
 
     public void setParticle(String particle) {
-        this.particle = particle;
+        this.particle = EnumValidator.validate(particle, Particle.class, null, null);
     }
 
     public void refresh() {
@@ -191,10 +192,23 @@ public class EntitySpinner implements Spinnable {
             entity.getLocation().getWorld().playSound(location, Sound.valueOf(sound), 1, 1);
         }
         if (effect != null) {
-            entity.getLocation().getWorld().playEffect(location, Effect.valueOf(effect), 1);
+            try {
+                entity.getLocation().getWorld().playEffect(location, Effect.valueOf(effect), 1);
+            } catch (IllegalArgumentException e) {
+                setEffect(null);
+            }
         }
         if (particle != null) {
-            entity.getLocation().getWorld().spawnParticle(Particle.valueOf(particle), location, 1);
+            try {
+                Particle particleType = Particle.valueOf(particle);
+                if (EnumValidator.isParticlePlayableWithoutData(particle)) {
+                    entity.getLocation().getWorld().spawnParticle(particleType, location, 1);
+                } else {
+                    setParticle(null);
+                }
+            } catch (IllegalArgumentException e) {
+                setParticle(null);
+            }
         }
     }
 }

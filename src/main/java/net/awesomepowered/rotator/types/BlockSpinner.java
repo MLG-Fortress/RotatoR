@@ -4,6 +4,7 @@ import net.awesomepowered.rotator.RotatoR;
 import net.awesomepowered.rotator.Spinnable;
 import net.awesomepowered.rotator.event.RotatorSpinEvent;
 import net.awesomepowered.rotator.utils.Rotation;
+import net.awesomepowered.rotator.utils.EnumValidator;
 import net.awesomepowered.rotator.utils.Spinner;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
@@ -77,16 +78,16 @@ public class BlockSpinner implements Spinnable {
     }
 
     public void setEffect(String effect) {
-        this.effect = effect;
+        this.effect = EnumValidator.validate(effect, Effect.class, null, null);
     }
 
     public void setSound(String sound) {
-        this.sound = sound;
+        this.sound = EnumValidator.validate(sound, Sound.class, null, null);
     }
 
     @Override
     public void setParticle(String particle) {
-        this.particle = particle;
+        this.particle = EnumValidator.validate(particle, Particle.class, null, null);
     }
 
     public String getEffect() {
@@ -160,10 +161,23 @@ public class BlockSpinner implements Spinnable {
             state.getLocation().getWorld().playSound(state.getLocation(), Sound.valueOf(sound), 1, 1);
         }
         if (effect != null) {
-            state.getLocation().getWorld().playEffect(state.getLocation().add(0.5,0,0.5), Effect.valueOf(effect), 1);
+            try {
+                state.getLocation().getWorld().playEffect(state.getLocation().add(0.5,0,0.5), Effect.valueOf(effect), 1);
+            } catch (IllegalArgumentException e) {
+                setEffect(null);
+            }
         }
         if (particle != null) {
-            state.getLocation().getWorld().spawnParticle(Particle.valueOf(particle), state.getLocation().add(0.5,0,0.5), 1);
+            try {
+                Particle particleType = Particle.valueOf(particle);
+                if (EnumValidator.isParticlePlayableWithoutData(particle)) {
+                    state.getLocation().getWorld().spawnParticle(particleType, state.getLocation().add(0.5,0,0.5), 1);
+                } else {
+                    setParticle(null);
+                }
+            } catch (IllegalArgumentException e) {
+                setParticle(null);
+            }
         }
     }
 
