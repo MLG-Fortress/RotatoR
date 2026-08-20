@@ -19,7 +19,7 @@ public class EnumValidator {
         // SOUND ALIASES
         // ==========================================
 
-        // RECORD_* → MUSIC_DISC_* (1.19.3)
+        // RECORD_* -> MUSIC_DISC_* (1.19.3)
         SOUND_ALIASES.put("RECORD_11", "MUSIC_DISC_11");
         SOUND_ALIASES.put("RECORD_13", "MUSIC_DISC_13");
         SOUND_ALIASES.put("RECORD_5", "MUSIC_DISC_5");
@@ -37,7 +37,7 @@ public class EnumValidator {
         SOUND_ALIASES.put("RECORD_PIGSTEP", "MUSIC_DISC_PIGSTEP");
         SOUND_ALIASES.put("RECORD_RELIC", "MUSIC_DISC_RELIC");
 
-        // 1.8 NOTE_* → BLOCK_NOTE_BLOCK_*
+        // 1.8 NOTE_* -> BLOCK_NOTE_BLOCK_*
         SOUND_ALIASES.put("NOTE_PLING", "BLOCK_NOTE_BLOCK_PLING");
         SOUND_ALIASES.put("NOTE_PIANO", "BLOCK_NOTE_BLOCK_HARP");
         SOUND_ALIASES.put("NOTE_BASS", "BLOCK_NOTE_BLOCK_BASS");
@@ -45,7 +45,7 @@ public class EnumValidator {
         SOUND_ALIASES.put("NOTE_SNARE_DRUM", "BLOCK_NOTE_BLOCK_SNARE");
         SOUND_ALIASES.put("NOTE_STICKS", "BLOCK_NOTE_BLOCK_HAT");
 
-        // 1.9-1.19.2 BLOCK_NOTE_* → BLOCK_NOTE_BLOCK_* (1.19.3)
+        // 1.9-1.19.2 BLOCK_NOTE_* -> BLOCK_NOTE_BLOCK_* (1.19.3)
         SOUND_ALIASES.put("BLOCK_NOTE_HARP", "BLOCK_NOTE_BLOCK_HARP");
         SOUND_ALIASES.put("BLOCK_NOTE_BASS", "BLOCK_NOTE_BLOCK_BASS");
         SOUND_ALIASES.put("BLOCK_NOTE_PIANO", "BLOCK_NOTE_BLOCK_HARP");
@@ -124,8 +124,8 @@ public class EnumValidator {
         // ============================================================
         // PARTICLE ALIASES (1.13 & 1.20.5 Flattening)
         // ------------------------------------------------------------
-        // Legacy particle names from the 1.13 "flattening" (EXPLOSION_NORMAL →
-        // POOF) and 1.20.5 (SPELL → EFFECT, ITEM_CRACK → ITEM) no longer exist
+        // Legacy particle names from the 1.13 "flattening" (EXPLOSION_NORMAL ->
+        // POOF) and 1.20.5 (SPELL -> EFFECT, ITEM_CRACK -> ITEM) no longer exist
         // on modern servers. Same necessity as the Sound/Effect aliases above:
         // configs written on older servers reference names that would otherwise
         // be cleared at load. Only used when the exact name is invalid, so
@@ -210,7 +210,7 @@ public class EnumValidator {
                     return null;
                 }
                 if (logger != null && configKey != null) {
-                    logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' → '" + mapped + "'"
+                    logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' -> '" + mapped + "'"
                             + " for " + configKey);
                 }
                 return mapped;
@@ -221,7 +221,7 @@ public class EnumValidator {
         String[] prefixes = {"ENTITY_", "BLOCK_", "ITEM_", "MUSIC_", "MUSIC_DISC_", "AMBIENT_", "UI_"};
 
         for (String prefix : prefixes) {
-            // Try stripping prefix (e.g. ENTITY_COW_AMBIENT → COW_AMBIENT on legacy servers)
+            // Try stripping prefix (e.g. ENTITY_COW_AMBIENT -> COW_AMBIENT on legacy servers)
             if (upper.startsWith(prefix)) {
                 String stripped = upper.substring(prefix.length());
                 if (isValidEnum(stripped, clazz)) {
@@ -229,21 +229,21 @@ public class EnumValidator {
                         return null;
                     }
                     if (logger != null && configKey != null) {
-                        logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' → '" + stripped + "'"
+                        logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' -> '" + stripped + "'"
                                 + " for " + configKey);
                     }
                     return stripped;
                 }
             }
 
-            // Try prepending prefix (e.g. COW_AMBIENT → ENTITY_COW_AMBIENT on modern servers)
+            // Try prepending prefix (e.g. COW_AMBIENT -> ENTITY_COW_AMBIENT on modern servers)
             String prepended = prefix + upper;
             if (isValidEnum(prepended, clazz)) {
                 if (!isPlayableParticle(prepended, clazz, value, configKey, logger)) {
                     return null;
                 }
                 if (logger != null && configKey != null) {
-                    logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' → '" + prepended + "'"
+                    logger.info("Converted " + clazz.getSimpleName() + " '" + value + "' -> '" + prepended + "'"
                             + " for " + configKey);
                 }
                 return prepended;
