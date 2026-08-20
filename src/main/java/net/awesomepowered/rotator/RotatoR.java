@@ -98,11 +98,6 @@ public final class RotatoR extends JavaPlugin {
         return main;
     }
 
-    /**
-     * One-time conversion of legacy enum names in the config. Runs once at plugin
-     * enable — never again. Converts and writes back all spinner/espinner values,
-     * so later spooling reads already-valid names.
-     */
     public void convertConfig() {
         if (getConfig().getConfigurationSection("spinner") != null) {
             for (String s : getConfig().getConfigurationSection("spinner").getKeys(false)) {
