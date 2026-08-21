@@ -85,6 +85,7 @@ public final class RotatoR extends JavaPlugin {
                     if (loaded.getWorld().equals(loc.getWorld())
                             && loaded.getX() == (loc.getBlockX() >> 4)
                             && loaded.getZ() == (loc.getBlockZ() >> 4)) {
+                        debug("eSpin", "ChunkLoadEvent: attempting to spool espinner " + s);
                         spoolEntitySpinner(s);
                     }
                 }
@@ -197,7 +198,15 @@ public final class RotatoR extends JavaPlugin {
                 }
             }
         }
-        if (entity == null || entity.isDead() || !Spinner.isSpinnable(entity)) {
+        if (entity == null) {
+            getLogger().log(Level.WARNING, "[espinner] Could not find entity " + s
+                    + " (loc=" + getConfig().getString("espinner." + s + ".loc")
+                    + "). It may not be loaded yet or was removed.");
+            return;
+        }
+        if (entity.isDead() || !Spinner.isSpinnable(entity)) {
+            getLogger().log(Level.WARNING, "[espinner] Entity " + s + " is "
+                    + (entity.isDead() ? "dead" : "not spinnable") + ", skipping spool.");
             return;
         }
         String sound = getConfig().getString("espinner." + s + ".sound");

@@ -122,6 +122,27 @@ public class EntitySpinner implements Spinnable {
         RotatoR.getMain().entitySpinners.remove(entity.getUniqueId());
     }
 
+    /**
+     * Re-acquire the live entity if our held reference went stale (e.g. chunk unload/reload).
+     * @return 0 = live and ready, 1 = not in a loaded chunk right now (pause, retry later), 2 = truly dead
+     */
+    private int resolveEntity() {
+        if (entity != null && !entity.isDead() && entity.isValid()) {
+            return 0;
+        }
+        Entity live = Bukkit.getEntity(entity.getUniqueId());
+        if (live != null && !live.isDead()) {
+            entity = live;
+            RotatoR.getMain().debug("eSpin", "Re-acquired live entity " + entity.getUniqueId()
+                    + " type=" + entity.getType() + " valid=" + entity.isValid());
+            return 0;
+        }
+        if (live != null) {
+            return 2; // a live entity with this UUID exists but is dead
+        }
+        return 1; // not currently in any loaded chunk
+    }
+
     public void spoolUp() {
         Location constant = entity.getLocation();
         RotatoR.getMain().debug("eSpool","Using mode 0");
@@ -133,16 +154,19 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                if (entity.isDead()) {
-                    RotatoR.getMain().getLogger().log(Level.WARNING, "Oh noes! An entity is ded!");
+                int status = resolveEntity();
+                if (status == 2) {
+                    RotatoR.getMain().getLogger().log(Level.WARNING,
+                            "Oh noes! An entity is ded! uuid=" + entity.getUniqueId()
+                            + " type=" + entity.getType()
+                            + " world=" + (entity.getWorld() != null ? entity.getWorld().getName() : "null")
+                            + " liveLookup=" + (Bukkit.getEntity(entity.getUniqueId()) != null));
                     selfDestruct();
                     return;
                 }
-                if (!entity.isValid()) {
-                    Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
-                    if (newEntity == null || newEntity.isDead())
-                        return;
-                    entity = newEntity;
+                if (status == 1) {
+                    RotatoR.getMain().debug("eSpin", "Entity " + entity.getUniqueId() + " not in a loaded chunk, pausing spin task");
+                    return;
                 }
                 ItemFrame itemFrame = (ItemFrame) entity;
                 if (mode == 0) {
@@ -160,16 +184,19 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                if (entity.isDead()) {
-                    RotatoR.getMain().getLogger().log(Level.WARNING, "Oh noes! An entity is ded!");
+                int status = resolveEntity();
+                if (status == 2) {
+                    RotatoR.getMain().getLogger().log(Level.WARNING,
+                            "Oh noes! An entity is ded! uuid=" + entity.getUniqueId()
+                            + " type=" + entity.getType()
+                            + " world=" + (entity.getWorld() != null ? entity.getWorld().getName() : "null")
+                            + " liveLookup=" + (Bukkit.getEntity(entity.getUniqueId()) != null));
                     selfDestruct();
                     return;
                 }
-                if (!entity.isValid()) {
-                    Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
-                    if (newEntity == null || newEntity.isDead())
-                        return;
-                    entity = newEntity;
+                if (status == 1) {
+                    RotatoR.getMain().debug("eSpin", "Entity " + entity.getUniqueId() + " not in a loaded chunk, pausing spin task");
+                    return;
                 }
                 constant.setYaw((float) trouble.getAndAdd(yawChange) % 360); //shhh
                 entity.teleport(constant);
