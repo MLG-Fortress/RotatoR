@@ -20,10 +20,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
+import org.bukkit.Chunk;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.plugin.Plugin;
@@ -61,6 +63,31 @@ public final class RotatoR extends JavaPlugin {
             @EventHandler
             public void onWorldLoad(WorldLoadEvent event) {
                 spoolSpinners();
+            }
+            @EventHandler
+            public void onChunkLoad(ChunkLoadEvent event) {
+                if (getConfig().getConfigurationSection("espinner") == null) {
+                    return;
+                }
+                Chunk loaded = event.getChunk();
+                for (String s : getConfig().getConfigurationSection("espinner").getKeys(false)) {
+                    if (entitySpinners.containsKey(UUID.fromString(s))) {
+                        continue;
+                    }
+                    String location = getConfig().getString("espinner." + s + ".loc");
+                    if (location == null) {
+                        continue;
+                    }
+                    Location loc = stringToLoc(location);
+                    if (loc == null || loc.getWorld() == null) {
+                        continue;
+                    }
+                    if (loaded.getWorld().equals(loc.getWorld())
+                            && loaded.getX() == (loc.getBlockX() >> 4)
+                            && loaded.getZ() == (loc.getBlockZ() >> 4)) {
+                        spoolEntitySpinner(s);
+                    }
+                }
             }
             @EventHandler
             public void onWorldUnload(WorldUnloadEvent event) {
@@ -148,33 +175,44 @@ public final class RotatoR extends JavaPlugin {
         } else {
             for (String s : getConfig().getConfigurationSection("espinner").getKeys(false)) {
                 debug("Loading espinner", s);
-                String location = getConfig().getString("espinner."+s+".loc");
-                if (location != null) {
-                    Location loc = stringToLoc(location);
-                    if (loc != null && loc.getWorld() != null) {
-                        loc.getChunk().load(false);
-                    }
-                }
-                Entity entity = Bukkit.getEntity(UUID.fromString(s));
-                if (entity != null && !entitySpinners.containsKey(UUID.fromString(s)) && Spinner.isSpinnable(entity)) {
-                    debug("It's espinnable");
-                    String sound = getConfig().getString("espinner."+s+".sound");
-                    String effect = getConfig().getString("espinner."+s+".effect");
-                    String particle = getConfig().getString("espinner."+s+".particle");
-                    int rpm = getConfig().getInt("espinner."+s+".rpm", this.rpm);
-                    double yaw = getConfig().getDouble("espinner."+s+".yaw", 12.5);
-                    EntitySpinner entitySpinner = new EntitySpinner(entity, 0, rpm);
-                    entitySpinner.setEffect(effect);
-                    entitySpinner.setSound(sound);
-                    entitySpinner.setParticle(particle);
-                    entitySpinner.setYawChange(yaw);
-                    debug( "Main", "Spooling up espinner id " + s, "RPM: " + rpm, "Sound: " + sound, "Effect: " + effect, "Particle: " + particle, "Yaw: " + yaw);
-                    entitySpinner.spoolUp();
-                    entitySpinners.put(UUID.fromString(s), entitySpinner);
-                }
+                spoolEntitySpinner(s);
             }
         }
 
+    }
+
+    public void spoolEntitySpinner(String s) {
+        UUID uuid = UUID.fromString(s);
+        if (entitySpinners.containsKey(uuid)) {
+            return;
+        }
+        Entity entity = Bukkit.getEntity(uuid);
+        if (entity == null) {
+            String location = getConfig().getString("espinner." + s + ".loc");
+            if (location != null) {
+                Location loc = stringToLoc(location);
+                if (loc != null && loc.getWorld() != null) {
+                    loc.getWorld().loadChunk(loc.getBlockX() >> 4, loc.getBlockZ() >> 4, true);
+                    entity = Bukkit.getEntity(uuid);
+                }
+            }
+        }
+        if (entity == null || entity.isDead() || !Spinner.isSpinnable(entity)) {
+            return;
+        }
+        String sound = getConfig().getString("espinner." + s + ".sound");
+        String effect = getConfig().getString("espinner." + s + ".effect");
+        String particle = getConfig().getString("espinner." + s + ".particle");
+        int rpm = getConfig().getInt("espinner." + s + ".rpm", this.rpm);
+        double yaw = getConfig().getDouble("espinner." + s + ".yaw", 12.5);
+        EntitySpinner entitySpinner = new EntitySpinner(entity, 0, rpm);
+        entitySpinner.setEffect(effect);
+        entitySpinner.setSound(sound);
+        entitySpinner.setParticle(particle);
+        entitySpinner.setYawChange(yaw);
+        debug("Main", "Spooling up espinner id " + s, "RPM: " + rpm, "Sound: " + sound, "Effect: " + effect, "Particle: " + particle, "Yaw: " + yaw);
+        entitySpinner.spoolUp();
+        entitySpinners.put(uuid, entitySpinner);
     }
 
     public void saveSpinners() {
