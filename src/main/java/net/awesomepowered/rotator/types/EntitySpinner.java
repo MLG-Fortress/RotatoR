@@ -136,10 +136,11 @@ public class EntitySpinner implements Spinnable {
                 if (entity.isDead()) {
                     RotatoR.getMain().getLogger().log(Level.WARNING, "Oh noes! An entity is ded!");
                     selfDestruct();
+                    return;
                 }
                 if (!entity.isValid()) {
                     Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
-                    if (newEntity == null)
+                    if (newEntity == null || newEntity.isDead())
                         return;
                     entity = newEntity;
                 }
@@ -162,10 +163,11 @@ public class EntitySpinner implements Spinnable {
                 if (entity.isDead()) {
                     RotatoR.getMain().getLogger().log(Level.WARNING, "Oh noes! An entity is ded!");
                     selfDestruct();
+                    return;
                 }
                 if (!entity.isValid()) {
                     Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
-                    if (newEntity == null)
+                    if (newEntity == null || newEntity.isDead())
                         return;
                     entity = newEntity;
                 }
