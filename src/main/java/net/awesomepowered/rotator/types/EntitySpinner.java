@@ -119,23 +119,6 @@ public class EntitySpinner implements Spinnable {
         RotatoR.getMain().entitySpinners.remove(entity.getUniqueId());
     }
 
-    private boolean refreshEntity() {
-        if (!entity.isDead() && entity.isValid()) {
-            return true;
-        }
-
-        Entity live = Bukkit.getEntity(entity.getUniqueId());
-        if (live == null) {
-            return false;
-        }
-        if (live.isDead()) {
-            selfDestruct();
-            return false;
-        }
-        entity = live;
-        return true;
-    }
-
     public void spoolUp() {
         Location constant = entity.getLocation();
         RotatoR.getMain().debug("eSpool","Using mode 0");
@@ -147,8 +130,16 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                if (!refreshEntity()) {
-                    return;
+                if (!entity.isValid() || entity.isDead()) {
+                    Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
+                    if (newEntity == null) {
+                        return;
+                    }
+                    if (newEntity.isDead()) {
+                        selfDestruct();
+                        return;
+                    }
+                    entity = newEntity;
                 }
                 ItemFrame itemFrame = (ItemFrame) entity;
                 if (mode == 0) {
@@ -166,8 +157,16 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                if (!refreshEntity()) {
-                    return;
+                if (!entity.isValid() || entity.isDead()) {
+                    Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
+                    if (newEntity == null) {
+                        return;
+                    }
+                    if (newEntity.isDead()) {
+                        selfDestruct();
+                        return;
+                    }
+                    entity = newEntity;
                 }
                 constant.setYaw((float) trouble.getAndAdd(yawChange) % 360); //shhh
                 entity.teleport(constant);
