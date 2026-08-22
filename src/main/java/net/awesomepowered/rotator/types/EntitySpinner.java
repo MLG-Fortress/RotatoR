@@ -15,6 +15,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
 
+import java.util.UUID;
 import java.util.logging.Level;
 
 public class EntitySpinner implements Spinnable {
@@ -124,23 +125,48 @@ public class EntitySpinner implements Spinnable {
 
     /**
      * Re-acquire the live entity if our held reference went stale (e.g. chunk unload/reload).
+     * Logs a full state snapshot whenever the held reference is unhealthy; throttled to state
+     * transitions so a paused spinner doesn't spam.
      * @return 0 = live and ready, 1 = not in a loaded chunk right now (pause, retry later), 2 = truly dead
      */
+    private int lastResolveStatus = 0;
+
     private int resolveEntity() {
         if (entity != null && !entity.isDead() && entity.isValid()) {
+            lastResolveStatus = 0;
             return 0;
         }
-        Entity live = Bukkit.getEntity(entity.getUniqueId());
+        // Held reference is unhealthy; snapshot everything BEFORE touching anything
+        UUID uuid = entity.getUniqueId();
+        boolean heldDead = entity.isDead();
+        boolean heldValid = entity.isValid();
+        Entity live = Bukkit.getEntity(uuid);
+        String diag = "uuid=" + uuid
+                + " type=" + entity.getType()
+                + " heldDead=" + heldDead
+                + " heldValid=" + heldValid
+                + " | liveLookup=" + (live == null ? "absent" : "present")
+                + (live == null ? "" : " liveDead=" + live.isDead()
+                    + " liveValid=" + live.isValid()
+                    + " sameInstance=" + (live == entity))
+                + " | originalLogicWouldSelfDestruct=" + heldDead;
+
+        int status;
         if (live != null && !live.isDead()) {
             entity = live;
-            RotatoR.getMain().debug("eSpin", "Re-acquired live entity " + entity.getUniqueId()
-                    + " type=" + entity.getType() + " valid=" + entity.isValid());
-            return 0;
+            status = 0;
+            RotatoR.getMain().getLogger().log(Level.INFO, "[diag] stale held ref, re-acquired live entity: " + diag);
+        } else if (live != null) {
+            status = 2;
+            RotatoR.getMain().getLogger().log(Level.WARNING, "Oh noes! An entity is ded! " + diag);
+        } else {
+            status = 1;
+            if (lastResolveStatus != 1) {
+                RotatoR.getMain().debug("eSpin", "pausing spin task, entity not in any loaded chunk: " + diag);
+            }
         }
-        if (live != null) {
-            return 2; // a live entity with this UUID exists but is dead
-        }
-        return 1; // not currently in any loaded chunk
+        lastResolveStatus = status;
+        return status;
     }
 
     public void spoolUp() {
@@ -155,17 +181,10 @@ public class EntitySpinner implements Spinnable {
                     return;
                 }
                 int status = resolveEntity();
-                if (status == 2) {
-                    RotatoR.getMain().getLogger().log(Level.WARNING,
-                            "Oh noes! An entity is ded! uuid=" + entity.getUniqueId()
-                            + " type=" + entity.getType()
-                            + " world=" + (entity.getWorld() != null ? entity.getWorld().getName() : "null")
-                            + " liveLookup=" + (Bukkit.getEntity(entity.getUniqueId()) != null));
-                    selfDestruct();
-                    return;
-                }
-                if (status == 1) {
-                    RotatoR.getMain().debug("eSpin", "Entity " + entity.getUniqueId() + " not in a loaded chunk, pausing spin task");
+                if (status != 0) {
+                    if (status == 2) {
+                        selfDestruct();
+                    }
                     return;
                 }
                 ItemFrame itemFrame = (ItemFrame) entity;
@@ -185,17 +204,10 @@ public class EntitySpinner implements Spinnable {
                     return;
                 }
                 int status = resolveEntity();
-                if (status == 2) {
-                    RotatoR.getMain().getLogger().log(Level.WARNING,
-                            "Oh noes! An entity is ded! uuid=" + entity.getUniqueId()
-                            + " type=" + entity.getType()
-                            + " world=" + (entity.getWorld() != null ? entity.getWorld().getName() : "null")
-                            + " liveLookup=" + (Bukkit.getEntity(entity.getUniqueId()) != null));
-                    selfDestruct();
-                    return;
-                }
-                if (status == 1) {
-                    RotatoR.getMain().debug("eSpin", "Entity " + entity.getUniqueId() + " not in a loaded chunk, pausing spin task");
+                if (status != 0) {
+                    if (status == 2) {
+                        selfDestruct();
+                    }
                     return;
                 }
                 constant.setYaw((float) trouble.getAndAdd(yawChange) % 360); //shhh

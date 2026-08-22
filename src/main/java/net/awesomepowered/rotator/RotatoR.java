@@ -194,19 +194,9 @@ public final class RotatoR extends JavaPlugin {
         try {
         Entity entity = Bukkit.getEntity(uuid);
         if (entity == null) {
-            String location = getConfig().getString("espinner." + s + ".loc");
-            if (location != null) {
-                Location loc = stringToLoc(location);
-                if (loc != null && loc.getWorld() != null) {
-                    loc.getWorld().loadChunk(loc.getBlockX() >> 4, loc.getBlockZ() >> 4, true);
-                    entity = Bukkit.getEntity(uuid);
-                }
-            }
-        }
-        if (entity == null) {
-            getLogger().log(Level.WARNING, "[espinner] Could not find entity " + s
-                    + " (loc=" + getConfig().getString("espinner." + s + ".loc")
-                    + "). It may not be loaded yet or was removed.");
+            getLogger().log(Level.WARNING, "[espinner] Entity " + s + " not loaded yet (chunk not loaded),"
+                    + " waiting for its ChunkLoadEvent. loc="
+                    + getConfig().getString("espinner." + s + ".loc"));
             return;
         }
         if (entity.isDead() || !Spinner.isSpinnable(entity)) {
