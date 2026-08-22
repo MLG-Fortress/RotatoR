@@ -8,14 +8,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.Rotation;
 import org.bukkit.Sound;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
-
-import java.util.logging.Level;
 
 public class EntitySpinner implements Spinnable {
 
@@ -133,14 +130,15 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                if (entity.isDead()) {
-                    RotatoR.getMain().getLogger().log(Level.WARNING, "Oh noes! An entity is ded!");
-                    selfDestruct();
-                }
-                if (!entity.isValid()) {
+                if (!entity.isValid() || entity.isDead()) {
                     Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
-                    if (newEntity == null)
+                    if (newEntity == null) {
                         return;
+                    }
+                    if (newEntity.isDead()) {
+                        selfDestruct();
+                        return;
+                    }
                     entity = newEntity;
                 }
                 ItemFrame itemFrame = (ItemFrame) entity;
@@ -159,14 +157,15 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                if (entity.isDead()) {
-                    RotatoR.getMain().getLogger().log(Level.WARNING, "Oh noes! An entity is ded!");
-                    selfDestruct();
-                }
-                if (!entity.isValid()) {
+                if (!entity.isValid() || entity.isDead()) {
                     Entity newEntity = Bukkit.getEntity(entity.getUniqueId());
-                    if (newEntity == null)
+                    if (newEntity == null) {
                         return;
+                    }
+                    if (newEntity.isDead()) {
+                        selfDestruct();
+                        return;
+                    }
                     entity = newEntity;
                 }
                 constant.setYaw((float) trouble.getAndAdd(yawChange) % 360); //shhh

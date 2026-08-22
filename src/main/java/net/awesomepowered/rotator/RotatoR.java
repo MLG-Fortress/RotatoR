@@ -148,30 +148,33 @@ public final class RotatoR extends JavaPlugin {
         } else {
             for (String s : getConfig().getConfigurationSection("espinner").getKeys(false)) {
                 debug("Loading espinner", s);
-                String location = getConfig().getString("espinner."+s+".loc");
-                if (location != null) {
-                    Location loc = stringToLoc(location);
-                    if (loc != null && loc.getWorld() != null) {
-                        loc.getChunk().load(false);
-                    }
+                UUID uuid = UUID.fromString(s);
+                if (entitySpinners.containsKey(uuid)) {
+                    continue;
                 }
-                Entity entity = Bukkit.getEntity(UUID.fromString(s));
-                if (entity != null && !entitySpinners.containsKey(UUID.fromString(s)) && Spinner.isSpinnable(entity)) {
-                    debug("It's espinnable");
-                    String sound = getConfig().getString("espinner."+s+".sound");
-                    String effect = getConfig().getString("espinner."+s+".effect");
-                    String particle = getConfig().getString("espinner."+s+".particle");
-                    int rpm = getConfig().getInt("espinner."+s+".rpm", this.rpm);
-                    double yaw = getConfig().getDouble("espinner."+s+".yaw", 12.5);
-                    EntitySpinner entitySpinner = new EntitySpinner(entity, 0, rpm);
-                    entitySpinner.setEffect(effect);
-                    entitySpinner.setSound(sound);
-                    entitySpinner.setParticle(particle);
-                    entitySpinner.setYawChange(yaw);
-                    debug( "Main", "Spooling up espinner id " + s, "RPM: " + rpm, "Sound: " + sound, "Effect: " + effect, "Particle: " + particle, "Yaw: " + yaw);
-                    entitySpinner.spoolUp();
-                    entitySpinners.put(UUID.fromString(s), entitySpinner);
+                Entity entity = Bukkit.getEntity(uuid);
+                if (entity == null) {
+                    getLogger().log(Level.WARNING, "[espinner] Entity " + s + " not loaded, skipping spool.");
+                    continue;
                 }
+                if (entity.isDead() || !Spinner.isSpinnable(entity)) {
+                    getLogger().log(Level.WARNING, "[espinner] Entity " + s + " is "
+                            + (entity.isDead() ? "dead" : "not spinnable") + ", skipping spool.");
+                    continue;
+                }
+                String sound = getConfig().getString("espinner." + s + ".sound");
+                String effect = getConfig().getString("espinner." + s + ".effect");
+                String particle = getConfig().getString("espinner." + s + ".particle");
+                int rpm = getConfig().getInt("espinner." + s + ".rpm", this.rpm);
+                double yaw = getConfig().getDouble("espinner." + s + ".yaw", 12.5);
+                EntitySpinner entitySpinner = new EntitySpinner(entity, 0, rpm);
+                entitySpinner.setEffect(effect);
+                entitySpinner.setSound(sound);
+                entitySpinner.setParticle(particle);
+                entitySpinner.setYawChange(yaw);
+                debug("Main", "Spooling up espinner id " + s, "RPM: " + rpm, "Sound: " + sound, "Effect: " + effect, "Particle: " + particle, "Yaw: " + yaw);
+                entitySpinner.spoolUp();
+                entitySpinners.put(uuid, entitySpinner);
             }
         }
 
