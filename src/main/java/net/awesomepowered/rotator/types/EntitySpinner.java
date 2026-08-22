@@ -119,18 +119,21 @@ public class EntitySpinner implements Spinnable {
         RotatoR.getMain().entitySpinners.remove(entity.getUniqueId());
     }
 
-    private int resolveEntity() {
-        if (entity != null && !entity.isDead() && entity.isValid()) {
-            return 0;
+    private boolean refreshEntity() {
+        if (!entity.isDead() && entity.isValid()) {
+            return true;
         }
 
         Entity live = Bukkit.getEntity(entity.getUniqueId());
-        if (live != null && !live.isDead() && live.isValid()) {
-            entity = live;
-            return 0;
+        if (live == null) {
+            return false;
         }
-
-        return live == null ? 1 : 2;
+        if (live.isDead()) {
+            selfDestruct();
+            return false;
+        }
+        entity = live;
+        return true;
     }
 
     public void spoolUp() {
@@ -144,11 +147,7 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                int status = resolveEntity();
-                if (status != 0) {
-                    if (status == 2) {
-                        selfDestruct();
-                    }
+                if (!refreshEntity()) {
                     return;
                 }
                 ItemFrame itemFrame = (ItemFrame) entity;
@@ -167,11 +166,7 @@ public class EntitySpinner implements Spinnable {
                 if (rotatorSpinEvent.isCancelled()) {
                     return;
                 }
-                int status = resolveEntity();
-                if (status != 0) {
-                    if (status == 2) {
-                        selfDestruct();
-                    }
+                if (!refreshEntity()) {
                     return;
                 }
                 constant.setYaw((float) trouble.getAndAdd(yawChange) % 360); //shhh
