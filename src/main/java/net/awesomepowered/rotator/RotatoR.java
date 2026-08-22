@@ -32,9 +32,12 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public final class RotatoR extends JavaPlugin {
@@ -43,6 +46,7 @@ public final class RotatoR extends JavaPlugin {
     public Map<Location, Spinnable> blockSpinners = new HashMap<>();
     public Map<UUID, Spinnable> entitySpinners = new HashMap<>();
     public Map<UUID, Spinnable> leSigners = new HashMap<>(); //todo make lesigner object instead
+    private final Set<UUID> spoolingNow = Collections.newSetFromMap(new ConcurrentHashMap<>());
     public int rpm = 10;
     public static boolean debug = false;
     public static boolean isPremium = false;
@@ -184,9 +188,10 @@ public final class RotatoR extends JavaPlugin {
 
     public void spoolEntitySpinner(String s) {
         UUID uuid = UUID.fromString(s);
-        if (entitySpinners.containsKey(uuid)) {
+        if (entitySpinners.containsKey(uuid) || !spoolingNow.add(uuid)) {
             return;
         }
+        try {
         Entity entity = Bukkit.getEntity(uuid);
         if (entity == null) {
             String location = getConfig().getString("espinner." + s + ".loc");
@@ -222,6 +227,9 @@ public final class RotatoR extends JavaPlugin {
         debug("Main", "Spooling up espinner id " + s, "RPM: " + rpm, "Sound: " + sound, "Effect: " + effect, "Particle: " + particle, "Yaw: " + yaw);
         entitySpinner.spoolUp();
         entitySpinners.put(uuid, entitySpinner);
+        } finally {
+            spoolingNow.remove(uuid);
+        }
     }
 
     public void saveSpinners() {
